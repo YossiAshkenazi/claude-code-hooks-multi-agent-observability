@@ -1,10 +1,12 @@
 # scripts/start-services.ps1
-. "$PSScriptRoot\utils.ps1"
+$utilsPath = Join-Path $PSScriptRoot "utils.ps1"
+. $utilsPath
 
 Show-Header "Starting Services"
 
 # Install dependencies first
-& "$PSScriptRoot\install-deps.ps1"
+$installScript = Join-Path $PSScriptRoot "install-deps.ps1"
+& $installScript
 
 # Ensure logs directory exists
 Ensure-LogsDirectory

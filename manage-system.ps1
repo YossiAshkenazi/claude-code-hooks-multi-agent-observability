@@ -3,21 +3,41 @@ param(
     [string]$Action = ""
 )
 
-# Import utilities
-. "$PSScriptRoot\scripts\utils.ps1"
+# Import utilities with full path
+$utilsPath = Join-Path $PSScriptRoot "scripts\utils.ps1"
+if (Test-Path $utilsPath) {
+    . $utilsPath
+} else {
+    Write-Host "Error: Could not find utils.ps1 at $utilsPath" -ForegroundColor Red
+    exit 1
+}
 
 Show-Header "Multi-Agent Observability System Manager"
 
 # Check if action was provided as parameter
 if ($Action) {
     switch ($Action.ToLower()) {
-        "start" { & "$PSScriptRoot\scripts\start-services.ps1"; exit }
-        "stop" { & "$PSScriptRoot\scripts\stop-services.ps1"; exit }
-        "status" { & "$PSScriptRoot\scripts\check-status.ps1"; exit }
+        "start" { 
+            $startScript = Join-Path $PSScriptRoot "scripts\start-services.ps1"
+            & $startScript
+            exit 
+        }
+        "stop" { 
+            $stopScript = Join-Path $PSScriptRoot "scripts\stop-services.ps1"
+            & $stopScript
+            exit 
+        }
+        "status" { 
+            $statusScript = Join-Path $PSScriptRoot "scripts\check-status.ps1"
+            & $statusScript
+            exit 
+        }
         "restart" { 
-            & "$PSScriptRoot\scripts\stop-services.ps1"
+            $stopScript = Join-Path $PSScriptRoot "scripts\stop-services.ps1"
+            $startScript = Join-Path $PSScriptRoot "scripts\start-services.ps1"
+            & $stopScript
             Start-Sleep 2
-            & "$PSScriptRoot\scripts\start-services.ps1"
+            & $startScript
             exit 
         }
         default { 
@@ -28,10 +48,13 @@ if ($Action) {
 }
 
 # Interactive menu if no action provided
-$status = Get-SystemStatus
+$status = Get-SystemStatusAdvanced
 
 if ($status.ServerRunning -or $status.ClientRunning) {
     Write-Host ""
+    if ($status.ActualClientPort -ne "5173") {
+        Write-Host "Note: Client is running on port $($status.ActualClientPort)" -ForegroundColor Yellow
+    }
     Write-Host "System appears to be already running!" -ForegroundColor Yellow
     Write-Host "What would you like to do?"
     Write-Host "1. Restart (stop existing and start new)"
@@ -44,17 +67,29 @@ if ($status.ServerRunning -or $status.ClientRunning) {
     
     switch ($choice) {
         "1" { 
-            & "$PSScriptRoot\scripts\stop-services.ps1"
+            $stopScript = Join-Path $PSScriptRoot "scripts\stop-services.ps1"
+            $startScript = Join-Path $PSScriptRoot "scripts\start-services.ps1"
+            & $stopScript
             Start-Sleep 2
-            & "$PSScriptRoot\scripts\start-services.ps1"
+            & $startScript
         }
-        "2" { & "$PSScriptRoot\scripts\check-status.ps1" }
-        "3" { & "$PSScriptRoot\scripts\stop-services.ps1" }
+        "2" { 
+            $statusScript = Join-Path $PSScriptRoot "scripts\check-status.ps1"
+            & $statusScript 
+        }
+        "3" { 
+            $stopScript = Join-Path $PSScriptRoot "scripts\stop-services.ps1"
+            & $stopScript 
+        }
         "4" { Write-Host "Cancelled. Exiting..." -ForegroundColor Yellow; exit }
-        "5" { & "$PSScriptRoot\scripts\start-services.ps1" }
+        "5" { 
+            $startScript = Join-Path $PSScriptRoot "scripts\start-services.ps1"
+            & $startScript 
+        }
         default { Write-Host "Invalid choice. Exiting..." -ForegroundColor Red; exit }
     }
 } else {
     Write-Host "System is not running. Starting now..." -ForegroundColor Green
-    & "$PSScriptRoot\scripts\start-services.ps1"
+    $startScript = Join-Path $PSScriptRoot "scripts\start-services.ps1"
+    & $startScript
 }

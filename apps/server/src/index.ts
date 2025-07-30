@@ -10,6 +10,7 @@ import {
   importTheme,
   getThemeStats 
 } from './theme';
+import { executeTTS, speakNotification } from './tts';
 
 // Initialize database
 initDatabase();
@@ -266,6 +267,81 @@ const server = Bun.serve({
       return new Response(JSON.stringify(result), {
         headers: { ...headers, 'Content-Type': 'application/json' }
       });
+    }
+    
+    // TTS API endpoints
+    
+    // POST /api/tts - Execute TTS with custom text
+    if (url.pathname === '/api/tts' && req.method === 'POST') {
+      try {
+        const ttsRequest = await req.json();
+        
+        // Validate request
+        if (typeof ttsRequest.text !== 'string' && !ttsRequest.notification) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: 'Either "text" string or "notification" flag is required' 
+          }), {
+            status: 400,
+            headers: { ...headers, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        let result;
+        if (ttsRequest.notification) {
+          // Use default notification message
+          const engineerName = ttsRequest.engineer_name || process.env.ENGINEER_NAME;
+          result = await speakNotification(engineerName);
+        } else {
+          // Use custom text
+          result = await executeTTS({
+            text: ttsRequest.text,
+            engineer_name: ttsRequest.engineer_name || process.env.ENGINEER_NAME
+          });
+        }
+        
+        const status = result.success ? 200 : 500;
+        return new Response(JSON.stringify(result), {
+          status,
+          headers: { ...headers, 'Content-Type': 'application/json' }
+        });
+        
+      } catch (error) {
+        console.error('Error processing TTS request:', error);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Invalid TTS request' 
+        }), {
+          status: 400,
+          headers: { ...headers, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+    
+    // POST /api/tts/notification - Quick notification TTS
+    if (url.pathname === '/api/tts/notification' && req.method === 'POST') {
+      try {
+        const requestData = await req.json().catch(() => ({}));
+        const engineerName = requestData.engineer_name || process.env.ENGINEER_NAME;
+        
+        const result = await speakNotification(engineerName);
+        
+        const status = result.success ? 200 : 500;
+        return new Response(JSON.stringify(result), {
+          status,
+          headers: { ...headers, 'Content-Type': 'application/json' }
+        });
+        
+      } catch (error) {
+        console.error('Error executing notification TTS:', error);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'TTS notification failed' 
+        }), {
+          status: 500,
+          headers: { ...headers, 'Content-Type': 'application/json' }
+        });
+      }
     }
     
     // WebSocket upgrade

@@ -242,7 +242,7 @@ results/
 .history/
 .svn/
 CVS/
-claude-output.json
-.claude/commands/feature.md
+# claude-output.json
+# .claude/commands/feature.md
 
 specs/

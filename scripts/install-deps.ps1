@@ -1,5 +1,6 @@
 # scripts/install-deps.ps1
-. "$PSScriptRoot\utils.ps1"
+$utilsPath = Join-Path $PSScriptRoot "utils.ps1"
+. $utilsPath
 
 Show-Header "Installing Dependencies"
 
