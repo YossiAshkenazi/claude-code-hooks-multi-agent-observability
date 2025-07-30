@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run:*)",
+      "Bash(set PYTHONIOENCODING=utf-8)",
+      "Bash(chcp:*)",
+      "Bash(powershell:*)",
+      "Bash(python test_tts.py:*)",
+      "Bash(pip install:*)",
+      "Bash(ls:*)"
+    ],
+    "deny": []
+  }
+}
