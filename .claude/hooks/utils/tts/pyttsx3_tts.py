@@ -37,7 +37,7 @@ def main():
         engine.setProperty('rate', 180)    # Speech rate (words per minute)
         engine.setProperty('volume', 0.8)  # Volume (0.0 to 1.0)
         
-        print("🎙️  pyttsx3 TTS")
+        print("pyttsx3 TTS")
         print("=" * 15)
         
         # Get text from command line argument or use default
@@ -54,21 +54,21 @@ def main():
             ]
             text = random.choice(completion_messages)
         
-        print(f"🎯 Text: {text}")
-        print("🔊 Speaking...")
+        print(f"Text: {text}")
+        print("Speaking...")
         
         # Speak the text
         engine.say(text)
         engine.runAndWait()
         
-        print("✅ Playback complete!")
+        print("Playback complete!")
         
     except ImportError:
-        print("❌ Error: pyttsx3 package not installed")
+        print("Error: pyttsx3 package not installed")
         print("This script uses UV to auto-install dependencies.")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

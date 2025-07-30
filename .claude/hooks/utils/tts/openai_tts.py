@@ -39,7 +39,7 @@ async def main():
     # Get API key from environment
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        print("❌ Error: OPENAI_API_KEY not found in environment variables")
+        print("Error: OPENAI_API_KEY not found in environment variables")
         print("Please add your OpenAI API key to .env file:")
         print("OPENAI_API_KEY=your_api_key_here")
         sys.exit(1)
@@ -51,7 +51,7 @@ async def main():
         # Initialize OpenAI client
         openai = AsyncOpenAI(api_key=api_key)
 
-        print("🎙️  OpenAI TTS")
+        print("OpenAI TTS")
         print("=" * 20)
 
         # Get text from command line argument or use default
@@ -60,8 +60,8 @@ async def main():
         else:
             text = "Today is a wonderful day to build something people love!"
 
-        print(f"🎯 Text: {text}")
-        print("🔊 Generating and streaming...")
+        print(f"Text: {text}")
+        print("Generating and streaming...")
 
         try:
             # Generate and stream audio using OpenAI TTS
@@ -74,18 +74,18 @@ async def main():
             ) as response:
                 await LocalAudioPlayer().play(response)
 
-            print("✅ Playback complete!")
+            print("Playback complete!")
 
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"Error: {e}")
 
     except ImportError as e:
-        print("❌ Error: Required package not installed")
+        print("Error: Required package not installed")
         print("This script uses UV to auto-install dependencies.")
         print("Make sure UV is installed: https://docs.astral.sh/uv/")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"Unexpected error: {e}")
         sys.exit(1)
 
 

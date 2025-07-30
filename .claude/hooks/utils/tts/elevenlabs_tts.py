@@ -36,19 +36,20 @@ def main():
     # Get API key from environment
     api_key = os.getenv('ELEVENLABS_API_KEY')
     if not api_key:
-        print("❌ Error: ELEVENLABS_API_KEY not found in environment variables")
+        print("Error: ELEVENLABS_API_KEY not found in environment variables")
         print("Please add your ElevenLabs API key to .env file:")
         print("ELEVENLABS_API_KEY=your_api_key_here")
         sys.exit(1)
     
     try:
         from elevenlabs.client import ElevenLabs
-        from elevenlabs import play
+        import tempfile
+        import platform
         
         # Initialize client
         elevenlabs = ElevenLabs(api_key=api_key)
         
-        print("🎙️  ElevenLabs Turbo v2.5 TTS")
+        print("ElevenLabs Turbo v2.5 TTS")
         print("=" * 40)
         
         # Get text from command line argument or use default
@@ -57,32 +58,77 @@ def main():
         else:
             text = "The first move is what sets everything in motion."
         
-        print(f"🎯 Text: {text}")
-        print("🔊 Generating and playing...")
+        print(f"Text: {text}")
+        print("Generating and playing...")
         
         try:
             # Generate and play audio directly
             audio = elevenlabs.text_to_speech.convert(
                 text=text,
-                voice_id="WejK3H1m7MI9CHnIjW9K",  # Specified voice
+                voice_id="pNInz6obpgDQGcFmaJgB",  # Adam (free tier compatible)
                 model_id="eleven_turbo_v2_5",
                 output_format="mp3_44100_128",
             )
             
-            play(audio)
-            print("✅ Playback complete!")
+            # Save to temporary file and play
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as f:
+                audio_file = f.name
+                for chunk in audio:
+                    f.write(chunk)
+            
+            # Play the audio file on Windows using multiple methods
+            if platform.system() == "Windows":
+                import subprocess
+                played = False
+                
+                # Method 1: Try Windows Media Player
+                try:
+                    subprocess.run(['wmplayer', audio_file], 
+                                 timeout=1, capture_output=True, check=False)
+                    played = True
+                except:
+                    pass
+                
+                # Method 2: Try PowerShell with SoundPlayer (for WAV, but let's try)
+                if not played:
+                    try:
+                        ps_cmd = f'Add-Type -AssemblyName presentationCore; $player = New-Object System.Windows.Media.MediaPlayer; $player.Open([uri]"{audio_file}"); $player.Play(); Start-Sleep -Seconds 3'
+                        subprocess.run(['powershell', '-c', ps_cmd], 
+                                     timeout=5, capture_output=True, check=False)
+                        played = True
+                    except:
+                        pass
+                
+                # Method 3: Try VLC if available
+                if not played:
+                    try:
+                        subprocess.run(['vlc', '--play-and-exit', '--intf', 'dummy', audio_file], 
+                                     timeout=5, capture_output=True, check=False)
+                        played = True
+                    except:
+                        pass
+                
+                # Method 4: Fallback to start command
+                if not played:
+                    try:
+                        os.startfile(audio_file)
+                    except Exception as alt_error:
+                        print(f"All playback methods failed. Audio file saved to: {audio_file}")
+                        print("You can manually play this file to test audio.")
+            
+            print("Playback complete!")
             
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"Error: {e}")
         
         
     except ImportError:
-        print("❌ Error: elevenlabs package not installed")
+        print("Error: elevenlabs package not installed")
         print("This script uses UV to auto-install dependencies.")
         print("Make sure UV is installed: https://docs.astral.sh/uv/")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"Unexpected error: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":
