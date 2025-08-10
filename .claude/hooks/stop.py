@@ -12,6 +12,8 @@ import os
 import sys
 import random
 import subprocess
+import urllib.request
+import urllib.error
 from pathlib import Path
 from datetime import datetime
 from utils.constants import ensure_session_log_dir
@@ -66,7 +68,49 @@ def get_tts_script_path():
 
 def get_llm_completion_message():
     """
-    Generate completion message using available LLM services.
+    Generate completion message using the server's AI service.
+    Falls back to local random messages if server is unavailable.
+
+    Returns:
+        str: Generated or fallback completion message
+    """
+    engineer_name = os.getenv('ENGINEER_NAME', '').strip()
+    
+    # Try server-side generation first
+    try:
+        data = json.dumps({'engineer_name': engineer_name}).encode('utf-8')
+        req = urllib.request.Request(
+            'http://localhost:4000/api/ai/completion',
+            data=data,
+            headers={'Content-Type': 'application/json'}
+        )
+        
+        with urllib.request.urlopen(req, timeout=5) as response:
+            if response.status == 200:
+                result = json.loads(response.read().decode('utf-8'))
+                if result.get('success') and result.get('message'):
+                    return result['message']
+    except (urllib.error.URLError, json.JSONDecodeError, Exception):
+        pass  # Fall back to local messages
+    
+    # Fallback to local random messages
+    fallback_messages = get_completion_messages()
+    
+    if engineer_name and random.random() < 0.3:
+        personalized = [
+            f"{engineer_name}, all set!",
+            f"Ready for you, {engineer_name}!",
+            f"Complete, {engineer_name}!",
+            f"{engineer_name}, we're done!"
+        ]
+        return random.choice(personalized)
+    
+    return random.choice(fallback_messages)
+
+
+def get_llm_completion_message_old():
+    """
+    [Deprecated] Generate completion message using available LLM services.
     Priority order: OpenAI > Anthropic > fallback to random message
 
     Returns:
@@ -114,13 +158,34 @@ def get_llm_completion_message():
 
 
 def announce_completion():
-    """Announce completion using the best available TTS service."""
+    """Announce completion using server TTS with the AI-generated message."""
+    try:
+        # Get completion message (LLM-generated or fallback)
+        completion_message = get_llm_completion_message()
+        
+        # Try server-side TTS
+        data = json.dumps({'text': completion_message}).encode('utf-8')
+        req = urllib.request.Request(
+            'http://localhost:4000/api/tts',
+            data=data,
+            headers={'Content-Type': 'application/json'}
+        )
+        
+        with urllib.request.urlopen(req, timeout=10) as response:
+            if response.status == 200:
+                return  # Success
+    except (urllib.error.URLError, Exception):
+        # Fall back to local TTS if server is unavailable
+        announce_completion_local()
+
+def announce_completion_local():
+    """[Fallback] Announce completion using local TTS scripts."""
     try:
         tts_script = get_tts_script_path()
         if not tts_script:
             return  # No TTS scripts available
 
-        # Get completion message (LLM-generated or fallback)
+        # Get completion message (uses server or local fallback)
         completion_message = get_llm_completion_message()
 
         # Call the TTS script with the completion message

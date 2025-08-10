@@ -12,6 +12,8 @@ import os
 import sys
 import subprocess
 import random
+import urllib.request
+import urllib.error
 from pathlib import Path
 from utils.constants import ensure_session_log_dir
 
@@ -22,39 +24,50 @@ except ImportError:
     pass  # dotenv is optional
 
 
-def get_tts_script_path():
-    """
-    Determine which TTS script to use based on available API keys.
-    Priority order: ElevenLabs > OpenAI > pyttsx3
-    """
-    # Get current script directory and construct utils/tts path
-    script_dir = Path(__file__).parent
-    tts_dir = script_dir / "utils" / "tts"
-    
-    # Check for ElevenLabs API key (highest priority)
-    if os.getenv('ELEVENLABS_API_KEY'):
-        elevenlabs_script = tts_dir / "elevenlabs_tts.py"
-        if elevenlabs_script.exists():
-            return str(elevenlabs_script)
-    
-    # Check for OpenAI API key (second priority)
-    if os.getenv('OPENAI_API_KEY'):
-        openai_script = tts_dir / "openai_tts.py"
-        if openai_script.exists():
-            return str(openai_script)
-    
-    # Fall back to pyttsx3 (no API key required)
-    pyttsx3_script = tts_dir / "pyttsx3_tts.py"
-    if pyttsx3_script.exists():
-        return str(pyttsx3_script)
-    
-    return None
-
-
 def announce_notification():
-    """Announce that the agent needs user input."""
+    """Announce that the agent needs user input using server TTS."""
     try:
-        tts_script = get_tts_script_path()
+        # Get engineer name if available
+        engineer_name = os.getenv('ENGINEER_NAME', '').strip()
+        
+        # Try server-side TTS first
+        data = json.dumps({'notification': True, 'engineer_name': engineer_name}).encode('utf-8')
+        req = urllib.request.Request(
+            'http://localhost:4000/api/tts/notification',
+            data=data,
+            headers={'Content-Type': 'application/json'}
+        )
+        
+        with urllib.request.urlopen(req, timeout=10) as response:
+            if response.status == 200:
+                return  # Success
+    except (urllib.error.URLError, Exception):
+        # Fall back to local TTS if server is unavailable
+        announce_notification_local()
+
+
+def announce_notification_local():
+    """[Fallback] Announce using local TTS scripts."""
+    try:
+        # Get current script directory and construct utils/tts path
+        script_dir = Path(__file__).parent
+        tts_dir = script_dir / "utils" / "tts"
+        
+        # Try to find a TTS script
+        tts_script = None
+        if os.getenv('ELEVENLABS_API_KEY'):
+            elevenlabs_script = tts_dir / "elevenlabs_tts.py"
+            if elevenlabs_script.exists():
+                tts_script = str(elevenlabs_script)
+        elif os.getenv('OPENAI_API_KEY'):
+            openai_script = tts_dir / "openai_tts.py"
+            if openai_script.exists():
+                tts_script = str(openai_script)
+        else:
+            pyttsx3_script = tts_dir / "pyttsx3_tts.py"
+            if pyttsx3_script.exists():
+                tts_script = str(pyttsx3_script)
+        
         if not tts_script:
             return  # No TTS scripts available
         

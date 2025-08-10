@@ -28,6 +28,7 @@ MANIFEST
 .nox/
 .venv
 env/
+bun.lock
 venv/
 ENV/
 env.bak/

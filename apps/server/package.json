@@ -15,6 +15,8 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.59.0",
+    "openai": "^5.12.2",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
   }

@@ -78,7 +78,7 @@ export async function executeTTS(request: TTSRequest): Promise<TTSResponse> {
     try {
       // Execute TTS script using uv with full path
       const uvPath = process.env.UV_PATH || 'C:\\Users\\יוסי\\.local\\bin\\uv.exe';
-      const process = spawn(uvPath, ['run', ttsScript, text], {
+      const childProcess = spawn(uvPath, ['run', ttsScript, text], {
         stdio: ['ignore', 'pipe', 'pipe'],
         timeout: 15000 // 15 second timeout
       });
@@ -86,15 +86,15 @@ export async function executeTTS(request: TTSRequest): Promise<TTSResponse> {
       let stdout = '';
       let stderr = '';
       
-      process.stdout?.on('data', (data) => {
+      childProcess.stdout?.on('data', (data: Buffer) => {
         stdout += data.toString();
       });
       
-      process.stderr?.on('data', (data) => {
+      childProcess.stderr?.on('data', (data: Buffer) => {
         stderr += data.toString();
       });
       
-      process.on('close', (code) => {
+      childProcess.on('close', (code: number | null) => {
         const methodUsed = ttsScript.includes('elevenlabs') ? 'ElevenLabs' :
                           ttsScript.includes('openai') ? 'OpenAI' :
                           ttsScript.includes('pyttsx3') ? 'pyttsx3' : 'Unknown';
@@ -115,7 +115,7 @@ export async function executeTTS(request: TTSRequest): Promise<TTSResponse> {
         }
       });
       
-      process.on('error', (error) => {
+      childProcess.on('error', (error: Error) => {
         resolve({
           success: false,
           message: "Failed to execute TTS script",

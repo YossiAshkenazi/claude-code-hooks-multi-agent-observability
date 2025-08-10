@@ -8,7 +8,9 @@
       "Bash(python test_tts.py:*)",
       "Bash(pip install:*)",
       "Bash(ls:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(bun add:*)",
+      "Bash(bun run:*)"
     ],
     "deny": []
   }

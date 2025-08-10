@@ -1,14 +1,12 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.8"
-# dependencies = [
-#     "python-dotenv",
-# ]
 # ///
 
 """
-Multi-Agent Observability Hook Script
-Sends Claude Code hook events to the observability server.
+Minimal Hook Script for Multi-Agent Observability
+Sends Claude Code hook events to the centralized observability server.
+All AI processing happens server-side.
 """
 
 import json
@@ -32,7 +30,7 @@ def send_event_to_server(event_data, server_url='http://localhost:4000/events', 
             data=json.dumps(event_data).encode('utf-8'),
             headers={
                 'Content-Type': 'application/json',
-                'User-Agent': 'Claude-Code-Hook/1.0'
+                'User-Agent': 'Claude-Code-Hook-Minimal/1.0'
             }
         )
         
@@ -45,29 +43,72 @@ def send_event_to_server(event_data, server_url='http://localhost:4000/events', 
                 return False
                 
     except urllib.error.URLError as e:
-        print(f"Failed to send event: {e}", file=sys.stderr)
+        # Fail silently - don't interrupt Claude Code
         return False
     except Exception as e:
-        print(f"Unexpected error: {e}", file=sys.stderr)
+        # Fail silently - don't interrupt Claude Code
+        return False
+
+def request_tts(message_type='notification', text=None):
+    """Request TTS from server."""
+    try:
+        if message_type == 'notification':
+            url = 'http://localhost:4000/api/tts/notification'
+            data = json.dumps({}).encode('utf-8')
+        elif message_type == 'completion':
+            url = 'http://localhost:4000/api/ai/completion'
+            # Get completion message first
+            req = urllib.request.Request(
+                url,
+                data=json.dumps({}).encode('utf-8'),
+                headers={'Content-Type': 'application/json'}
+            )
+            with urllib.request.urlopen(req, timeout=5) as response:
+                if response.status == 200:
+                    result = json.loads(response.read().decode('utf-8'))
+                    if result.get('success') and result.get('message'):
+                        text = result['message']
+            
+            # Then request TTS with the message
+            url = 'http://localhost:4000/api/tts'
+            data = json.dumps({'text': text}).encode('utf-8') if text else None
+            if not data:
+                return False
+        else:
+            return False
+        
+        req = urllib.request.Request(
+            url,
+            data=data,
+            headers={'Content-Type': 'application/json'}
+        )
+        
+        with urllib.request.urlopen(req, timeout=10) as response:
+            return response.status == 200
+            
+    except (urllib.error.URLError, Exception):
+        # Fail silently
         return False
 
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Send Claude Code hook events to observability server')
     parser.add_argument('--source-app', required=True, help='Source application name')
-    parser.add_argument('--event-type', required=True, help='Hook event type (PreToolUse, PostToolUse, etc.)')
+    parser.add_argument('--event-type', required=True, help='Hook event type')
     parser.add_argument('--server-url', default='http://localhost:4000/events', help='Server URL')
     parser.add_argument('--add-chat', action='store_true', help='Include chat transcript if available')
-    parser.add_argument('--summarize', action='store_true', help='Generate AI summary of the event')
+    parser.add_argument('--summarize', action='store_true', help='Request server-side AI summary')
+    parser.add_argument('--notify', action='store_true', help='Request notification TTS')
+    parser.add_argument('--announce', action='store_true', help='Request completion announcement')
     
     args = parser.parse_args()
     
     try:
         # Read hook data from stdin
         input_data = json.load(sys.stdin)
-    except json.JSONDecodeError as e:
-        print(f"Failed to parse JSON input: {e}", file=sys.stderr)
-        sys.exit(1)
+    except json.JSONDecodeError:
+        # Exit silently on JSON errors
+        sys.exit(0)
     
     # Prepare event data for server
     event_data = {
@@ -96,11 +137,19 @@ def main():
                 
                 # Add chat to event data
                 event_data['chat'] = chat_data
-            except Exception as e:
-                print(f"Failed to read transcript: {e}", file=sys.stderr)
+            except Exception:
+                pass  # Fail silently
     
     # Send to server (with summarization handled server-side if requested)
-    success = send_event_to_server(event_data, args.server_url, args.summarize)
+    send_event_to_server(event_data, args.server_url, args.summarize)
+    
+    # Handle TTS requests
+    if args.notify:
+        # Skip TTS for the generic "Claude is waiting for your input" message
+        if input_data.get('message') != 'Claude is waiting for your input':
+            request_tts('notification')
+    elif args.announce:
+        request_tts('completion')
     
     # Always exit with 0 to not block Claude Code operations
     sys.exit(0)

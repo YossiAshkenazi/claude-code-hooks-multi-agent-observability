@@ -1,0 +1,69 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/hooks-minimal/send_event.py --source-app PROJECT_NAME --event-type PreToolUse --summarize"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/hooks-minimal/send_event.py --source-app PROJECT_NAME --event-type PostToolUse --summarize"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/hooks-minimal/send_event.py --source-app PROJECT_NAME --event-type UserPromptSubmit --summarize"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/hooks-minimal/send_event.py --source-app PROJECT_NAME --event-type Notification --notify"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/hooks-minimal/send_event.py --source-app PROJECT_NAME --event-type Stop --add-chat --announce"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/hooks-minimal/send_event.py --source-app PROJECT_NAME --event-type SubagentStop"
+          }
+        ]
+      }
+    ]
+  }
+}
