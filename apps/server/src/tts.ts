@@ -78,23 +78,41 @@ export async function executeTTS(request: TTSRequest): Promise<TTSResponse> {
     try {
       // Execute TTS script using uv with full path
       const uvPath = process.env.UV_PATH || 'C:\\Users\\יוסי\\.local\\bin\\uv.exe';
-      const process = spawn(uvPath, ['run', ttsScript, text], {
+      // Set up clean environment for UV to avoid encoding issues
+      const env = { ...process.env };
+      if (process.platform === 'win32') {
+        // Set a clean temp directory to avoid encoding issues
+        env.TEMP = 'C:\\Windows\\Temp';
+        env.TMP = 'C:\\Windows\\Temp';
+        // Use safe UV directories to avoid encoding issues
+        env.UV_CACHE_DIR = 'C:\\Windows\\Temp\\uv-cache';
+        env.UV_PYTHON_INSTALL_DIR = 'C:\\Windows\\Temp\\uv-python';
+        env.UV_TOOL_DIR = 'C:\\Windows\\Temp\\uv-tools';
+        // Disable UV config file to avoid path issues
+        env.UV_NO_CONFIG = '1';
+        // Override user profile to safe location
+        env.APPDATA = 'C:\\Windows\\Temp';
+      }
+      
+      const childProcess = spawn(uvPath, ['run', ttsScript, text], {
         stdio: ['ignore', 'pipe', 'pipe'],
+        shell: true, // Enable shell to resolve PATH on Windows
+        env: env, // Use modified environment
         timeout: 15000 // 15 second timeout
       });
       
       let stdout = '';
       let stderr = '';
       
-      process.stdout?.on('data', (data) => {
+      childProcess.stdout?.on('data', (data) => {
         stdout += data.toString();
       });
       
-      process.stderr?.on('data', (data) => {
+      childProcess.stderr?.on('data', (data) => {
         stderr += data.toString();
       });
       
-      process.on('close', (code) => {
+      childProcess.on('close', (code) => {
         const methodUsed = ttsScript.includes('elevenlabs') ? 'ElevenLabs' :
                           ttsScript.includes('openai') ? 'OpenAI' :
                           ttsScript.includes('pyttsx3') ? 'pyttsx3' : 'Unknown';
@@ -115,7 +133,7 @@ export async function executeTTS(request: TTSRequest): Promise<TTSResponse> {
         }
       });
       
-      process.on('error', (error) => {
+      childProcess.on('error', (error) => {
         resolve({
           success: false,
           message: "Failed to execute TTS script",
