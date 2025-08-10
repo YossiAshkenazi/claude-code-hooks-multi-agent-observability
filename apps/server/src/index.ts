@@ -423,6 +423,22 @@ const server = Bun.serve({
       }
     }
     
+    // GET /api/debug/env - Check environment variables (development only)
+    if (url.pathname === '/api/debug/env' && req.method === 'GET') {
+      const envStatus = {
+        ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,
+        OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
+        ELEVENLABS_API_KEY: !!process.env.ELEVENLABS_API_KEY,
+        ENGINEER_NAME: process.env.ENGINEER_NAME || null,
+        UV_PATH: process.env.UV_PATH || null,
+        NODE_ENV: process.env.NODE_ENV || 'development'
+      };
+      
+      return new Response(JSON.stringify(envStatus, null, 2), {
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
+    }
+    
     // WebSocket upgrade
     if (url.pathname === '/stream') {
       const success = server.upgrade(req);

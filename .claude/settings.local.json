@@ -10,7 +10,13 @@
       "Bash(ls:*)",
       "Bash(curl:*)",
       "Bash(bun add:*)",
-      "Bash(bun run:*)"
+      "Bash(bun run:*)",
+      "Bash(where uv)",
+      "Bash(bun start:*)",
+      "Bash(bun:*)",
+      "Bash(./src/index.ts)",
+      "Bash(.scriptsstop-services.ps1)",
+      "Bash(cp:*)"
     ],
     "deny": []
   }

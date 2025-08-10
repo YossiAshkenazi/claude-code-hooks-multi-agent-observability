@@ -46,5 +46,3 @@ Start-Process "http://localhost:5173"
 
 Write-Host ""
 Write-Host "Use 'manage-system.ps1' to check status or restart" -ForegroundColor Cyan
-Write-Host "Terminal closing in 5 seconds..." -ForegroundColor Yellow
-Start-Sleep 5

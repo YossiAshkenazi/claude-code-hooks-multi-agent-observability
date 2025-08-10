@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 
 interface TTSRequest {
   text: string;
@@ -12,6 +13,41 @@ interface TTSResponse {
   message: string;
   method_used?: string;
   error?: string;
+}
+
+/**
+ * Find UV executable path
+ */
+function getUVPath(): string {
+  // Check environment variable first
+  if (process.env.UV_PATH && existsSync(process.env.UV_PATH)) {
+    return process.env.UV_PATH;
+  }
+  
+  // Check common Windows installation paths
+  const commonPaths = [
+    'uv', // Try PATH first
+    join(homedir(), '.local', 'bin', 'uv.exe'),
+    join(homedir(), '.local', 'bin', 'uv'),
+    'C:\\Users\\Public\\.local\\bin\\uv.exe',
+  ];
+  
+  for (const path of commonPaths) {
+    try {
+      if (path === 'uv') {
+        // For 'uv' in PATH, we can't easily check existence, so return it
+        return path;
+      }
+      if (existsSync(path)) {
+        return path;
+      }
+    } catch (error) {
+      // Skip paths that cause errors (like invalid characters)
+      continue;
+    }
+  }
+  
+  return 'uv'; // Fallback to hoping it's in PATH
 }
 
 /**
@@ -77,7 +113,7 @@ export async function executeTTS(request: TTSRequest): Promise<TTSResponse> {
   return new Promise((resolve) => {
     try {
       // Execute TTS script using uv with full path
-      const uvPath = process.env.UV_PATH || 'C:\\Users\\יוסי\\.local\\bin\\uv.exe';
+      const uvPath = getUVPath();
       const childProcess = spawn(uvPath, ['run', ttsScript, text], {
         stdio: ['ignore', 'pipe', 'pipe'],
         timeout: 15000 // 15 second timeout
