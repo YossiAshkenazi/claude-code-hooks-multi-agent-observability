@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PreToolUse": {
+      "command": "uv run .claude/hooks/send_event.py --event-type PreToolUse",
+      "background": true
+    },
+    "PostToolUse": {
+      "command": "uv run .claude/hooks/send_event.py --event-type PostToolUse",
+      "background": true
+    },
+    "UserPromptSubmit": {
+      "command": "uv run .claude/hooks/send_event.py --event-type UserPromptSubmit",
+      "background": true
+    },
+    "Notification": {
+      "command": "uv run .claude/hooks/send_event.py --event-type Notification",
+      "background": true
+    },
+    "Stop": {
+      "command": "uv run .claude/hooks/send_event.py --event-type Stop --add-chat",
+      "background": true
+    },
+    "SubagentStop": {
+      "command": "uv run .claude/hooks/send_event.py --event-type SubagentStop",
+      "background": true
+    }
+  }
+}

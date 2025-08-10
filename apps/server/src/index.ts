@@ -352,6 +352,103 @@ const server = Bun.serve({
       }
     }
     
+    // API Proxy endpoints for centralized AI services
+    
+    // POST /api/llm/anthropic - Anthropic API proxy
+    if (url.pathname === '/api/llm/anthropic' && req.method === 'POST') {
+      try {
+        const request = await req.json();
+        
+        if (!process.env.ANTHROPIC_API_KEY) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: 'Anthropic API key not configured on server' 
+          }), {
+            status: 500,
+            headers: { ...headers, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        // Make request to Anthropic API
+        const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify(request)
+        });
+        
+        const result = await anthropicResponse.json();
+        
+        return new Response(JSON.stringify({
+          success: anthropicResponse.ok,
+          data: result
+        }), {
+          status: anthropicResponse.ok ? 200 : 500,
+          headers: { ...headers, 'Content-Type': 'application/json' }
+        });
+        
+      } catch (error) {
+        console.error('Error proxying Anthropic API:', error);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Failed to proxy Anthropic API request' 
+        }), {
+          status: 500,
+          headers: { ...headers, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+    
+    // POST /api/llm/openai - OpenAI API proxy
+    if (url.pathname === '/api/llm/openai' && req.method === 'POST') {
+      try {
+        const request = await req.json();
+        
+        if (!process.env.OPENAI_API_KEY) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: 'OpenAI API key not configured on server' 
+          }), {
+            status: 500,
+            headers: { ...headers, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        // Make request to OpenAI API
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+          },
+          body: JSON.stringify(request)
+        });
+        
+        const result = await openaiResponse.json();
+        
+        return new Response(JSON.stringify({
+          success: openaiResponse.ok,
+          data: result
+        }), {
+          status: openaiResponse.ok ? 200 : 500,
+          headers: { ...headers, 'Content-Type': 'application/json' }
+        });
+        
+      } catch (error) {
+        console.error('Error proxying OpenAI API:', error);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Failed to proxy OpenAI API request' 
+        }), {
+          status: 500,
+          headers: { ...headers, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+    
     // Default response
     return new Response('Multi-Agent Observability Server', {
       headers: { ...headers, 'Content-Type': 'text/plain' }

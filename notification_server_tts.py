@@ -29,11 +29,32 @@ def ensure_session_log_dir(session_id):
 
 
 def trigger_server_tts(message):
-    """Send TTS request to observability server."""
+    """Send TTS request to observability server with Docker fallback."""
     try:
-        # Default server URL (can be overridden with environment variable)
-        server_url = os.getenv('OBSERVABILITY_SERVER_URL', 'http://localhost:4000')
-        tts_endpoint = f"{server_url}/api/tts/notification"
+        # Try multiple server URLs for Docker compatibility
+        server_candidates = [
+            os.getenv('OBSERVABILITY_SERVER_URL'),
+            'http://localhost:4000',
+            'http://host.docker.internal:4000'
+        ]
+        
+        # Filter out None values
+        server_candidates = [url for url in server_candidates if url]
+        
+        tts_endpoint = None
+        for server_url in server_candidates:
+            try:
+                test_url = f"{server_url}/api/tts/notification"
+                # Quick connectivity test
+                response = requests.head(server_url, timeout=1)
+                if response.status_code in [200, 404]:  # 404 is OK, means server is up
+                    tts_endpoint = test_url
+                    break
+            except:
+                continue
+        
+        if not tts_endpoint:
+            return  # Fail silently if no server found
         
         # Send TTS request to server
         response = requests.post(

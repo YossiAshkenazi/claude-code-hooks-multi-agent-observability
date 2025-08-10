@@ -245,4 +245,7 @@ CVS/
 # claude-output.json
 # .claude/commands/feature.md
 
+# System process files
+system-pids.json
+
 specs/

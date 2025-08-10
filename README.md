@@ -34,8 +34,15 @@ To setup observability in your repo,we need to copy the .claude directory to you
 To integrate the observability hooks into your projects:
 
 1. **Copy the entire `.claude` directory to your project root:**
+   
+   **Linux/macOS:**
    ```bash
    cp -R .claude /path/to/your/project/
+   ```
+   
+   **Windows:**
+   ```powershell
+   Copy-Item -Recurse .claude C:\path\to\your\project\
    ```
 
 2. **Update the `settings.json` configuration:**
@@ -91,9 +98,17 @@ To integrate the observability hooks into your projects:
    Replace `YOUR_PROJECT_NAME` with a unique identifier for your project (e.g., `my-api-server`, `react-app`, etc.).
 
 3. **Ensure the observability server is running:**
+   
+   **Linux/macOS:**
    ```bash
    # From the observability project directory (this codebase)
    ./scripts/start-system.sh
+   ```
+   
+   **Windows:**
+   ```powershell
+   # From the observability project directory (this codebase)
+   .\scripts\start-services.ps1
    ```
 
 Now your project will send events to the observability system whenever Claude Code performs actions.
@@ -102,11 +117,28 @@ Now your project will send events to the observability system whenever Claude Co
 
 You can quickly view how this works by running this repositories .claude setup.
 
+### Linux/macOS:
 ```bash
 # 1. Start both server and client
 ./scripts/start-system.sh
 
 # 2. Open http://localhost:5173 in your browser
+
+# 3. Open Claude Code and run the following command:
+Run git ls-files to understand the codebase.
+
+# 4. Watch events stream in the client
+
+# 5. Copy the .claude folder to other projects you want to emit events from.
+cp -R .claude <directory of your codebase you want to emit events from>
+```
+
+### Windows:
+```powershell
+# 1. Start both server and client
+.\scripts\start-services.ps1
+
+# 2. Open http://localhost:5173 in your browser (opens automatically)
 
 # 3. Open Claude Code and run the following command:
 Run git ls-files to understand the codebase.
@@ -165,9 +197,14 @@ claude-code-hooks-multi-agent-observability/
 │   └── settings.json      # Hook configuration
 │
 ├── scripts/               # Utility scripts
-│   ├── start-system.sh   # Launch server & client
-│   ├── reset-system.sh   # Stop all processes
-│   └── test-system.sh    # System validation
+│   ├── start-system.sh   # Launch server & client (Linux/macOS)
+│   ├── start-services.ps1 # Launch server & client (Windows)
+│   ├── stop-services.ps1  # Stop all processes (Windows) 
+│   ├── check-status.ps1   # System status check (Windows)
+│   ├── install-deps.ps1   # Install dependencies (Windows)
+│   ├── utils.ps1          # PowerShell utility functions
+│   ├── reset-system.sh   # Stop all processes (Linux/macOS)
+│   └── test-system.sh    # System validation (Linux/macOS)
 │
 └── logs/                 # Application logs (gitignored)
 ```
@@ -307,6 +344,7 @@ Already integrated! Hooks run both validation and observability:
 
 ## 🧪 Testing
 
+### Linux/macOS:
 ```bash
 # System validation
 ./scripts/test-system.sh
@@ -320,6 +358,27 @@ curl -X POST http://localhost:4000/events \
     "hook_event_type": "PreToolUse",
     "payload": {"tool_name": "Bash", "tool_input": {"command": "ls"}}
   }'
+```
+
+### Windows:
+```powershell
+# System status check
+.\scripts\check-status.ps1
+
+# Manual event test (using Invoke-RestMethod)
+$body = @{
+    source_app = "test"
+    session_id = "test-123"
+    hook_event_type = "PreToolUse"
+    payload = @{
+        tool_name = "Bash"
+        tool_input = @{
+            command = "ls"
+        }
+    }
+} | ConvertTo-Json -Depth 3
+
+Invoke-RestMethod -Uri "http://localhost:4000/events" -Method POST -Body $body -ContentType "application/json"
 ```
 
 ## ⚙️ Configuration
@@ -377,6 +436,29 @@ This command will:
 - Show you exactly what changes were made
 
 This ensures your hooks work correctly regardless of where Claude Code is executed from.
+
+### Windows-Specific Issues
+
+**PowerShell Execution Policy**: If you get execution policy errors when running PowerShell scripts:
+
+```powershell
+# Check current policy
+Get-ExecutionPolicy
+
+# Set policy to allow local scripts (run as Administrator)
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+**Port Already in Use**: If ports 4000 or 5173 are occupied:
+- The scripts will automatically find alternative ports for the client
+- Check status with `.\scripts\check-status.ps1` to see actual ports being used
+
+**Process Management**: Use the provided PowerShell scripts for clean process management:
+```powershell
+.\scripts\start-services.ps1  # Start system
+.\scripts\stop-services.ps1   # Stop all processes
+.\scripts\check-status.ps1    # Check system status
+```
 
 ## Master AI Coding
 > And prepare for Agentic Engineering
