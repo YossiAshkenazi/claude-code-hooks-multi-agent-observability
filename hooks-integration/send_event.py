@@ -21,15 +21,50 @@ import urllib.error
 from datetime import datetime
 from pathlib import Path
 
+def is_running_in_docker():
+    """Detect if we're running inside a Docker container."""
+    # Check for .dockerenv file
+    if Path('/.dockerenv').exists():
+        return True
+    
+    # Check for docker in cgroup
+    try:
+        with open('/proc/self/cgroup', 'r') as f:
+            if 'docker' in f.read():
+                return True
+    except:
+        pass
+    
+    # Check for common Docker environment variables
+    if os.environ.get('DOCKER_CONTAINER'):
+        return True
+    
+    return False
+
+def get_smart_server_url(config_url):
+    """Return the appropriate server URL based on environment."""
+    # If the URL doesn't contain host.docker.internal, return as-is
+    if 'host.docker.internal' not in config_url:
+        return config_url
+    
+    # If we're in Docker, use host.docker.internal
+    if is_running_in_docker():
+        return config_url
+    
+    # Otherwise, replace host.docker.internal with localhost
+    return config_url.replace('host.docker.internal', 'localhost')
+
 def load_config():
     """Load configuration from hooks-config.json in the .claude directory."""
     config_path = Path('.claude/hooks-config.json')
+    
+    default_url = 'http://host.docker.internal:4000/events'
     
     if not config_path.exists():
         # Fallback to default values if config doesn't exist
         return {
             'source_app': 'unknown-project',
-            'server_url': 'http://host.docker.internal:4000/events',
+            'server_url': get_smart_server_url(default_url),
             'features': {
                 'summarize': True,
                 'tts_notifications': True,
@@ -40,13 +75,17 @@ def load_config():
     
     try:
         with open(config_path, 'r') as f:
-            return json.load(f)
+            config = json.load(f)
+            # Apply smart URL detection to loaded config
+            if 'server_url' in config:
+                config['server_url'] = get_smart_server_url(config['server_url'])
+            return config
     except (json.JSONDecodeError, IOError) as e:
         print(f"Warning: Failed to load config file: {e}", file=sys.stderr)
         # Return default config on error
         return {
             'source_app': 'unknown-project',
-            'server_url': 'http://host.docker.internal:4000/events',
+            'server_url': get_smart_server_url(default_url),
             'features': {
                 'summarize': True,
                 'tts_notifications': True,

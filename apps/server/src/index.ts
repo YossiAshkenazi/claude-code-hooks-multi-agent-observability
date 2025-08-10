@@ -66,6 +66,25 @@ const server = Bun.serve({
         // Insert event into database
         const savedEvent = insertEvent(event);
         
+        // Check for TTS notifications
+        const shouldNotify = url.searchParams.get('notify') === 'true';
+        const shouldAnnounce = url.searchParams.get('announce') === 'true';
+        
+        if (shouldNotify) {
+          // Quick notification TTS
+          const engineerName = process.env.ENGINEER_NAME;
+          executeTTS({ text: `Your agent needs your input`, engineer_name: engineerName })
+            .catch(err => console.error('TTS notification failed:', err));
+        }
+        
+        if (shouldAnnounce && event.hook_event_type === 'Stop') {
+          // Completion announcement TTS
+          const engineerName = process.env.ENGINEER_NAME;
+          const completionMessage = `Task completed in ${event.source_app}`;
+          executeTTS({ text: completionMessage, engineer_name: engineerName })
+            .catch(err => console.error('TTS announcement failed:', err));
+        }
+        
         // Broadcast to all WebSocket clients
         const message = JSON.stringify({ type: 'event', data: savedEvent });
         wsClients.forEach(client => {
