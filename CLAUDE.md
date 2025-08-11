@@ -166,6 +166,9 @@ Use the integrated installation system in `hooks-integration/`:
 # Basic installation with auto-detection
 python hooks-integration/install.py ~/target-project
 
+# For Docker containers (disables AI summarization)
+python hooks-integration/install.py /app --container
+
 # Custom configuration
 python hooks-integration/install.py ~/target-project \
   --project-name "My App" \

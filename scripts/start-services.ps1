@@ -42,7 +42,8 @@ Start-Sleep 3
 Test-ServiceHealth -Url "http://localhost:4000/events" -ServiceName "Server"
 Test-ServiceHealth -Url "http://localhost:5173" -ServiceName "Client"
 
-Start-Process "http://localhost:5173"
+# Open in Microsoft Edge specifically
+Start-Process "msedge.exe" -ArgumentList "http://localhost:5173"
 
 Write-Host ""
 Write-Host "Use 'manage-system.ps1' to check status or restart" -ForegroundColor Cyan

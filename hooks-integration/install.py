@@ -152,7 +152,9 @@ def main():
         print("  --no-chat              Disable chat transcript capture")
         print("  --no-announce          Disable completion announcements")
         print("  --minimal              Install minimal hooks only (PreToolUse, PostToolUse, UserPromptSubmit)")
+        print("  --container            Configure for Docker container (disables summarization)")
         print("\nExample: python install.py ~/my-project --project-name my-app")
+        print("\nFor Docker containers: python install.py /app --container")
         sys.exit(1)
     
     # Parse arguments
@@ -166,6 +168,7 @@ def main():
         "completion_announcements": True
     }
     minimal = False
+    container_mode = False
     
     i = 2
     while i < len(sys.argv):
@@ -191,6 +194,11 @@ def main():
         elif arg == "--minimal":
             minimal = True
             features = {"summarize": True, "tts_notifications": False, "chat_transcript": False, "completion_announcements": False}
+            i += 1
+        elif arg == "--container":
+            container_mode = True
+            # Containers should not do AI summarization (server-side only)
+            features["summarize"] = False
             i += 1
         else:
             print(f"Unknown argument: {arg}")
@@ -288,6 +296,9 @@ def main():
     
     if minimal:
         print("\n📦 Minimal installation - only core hooks enabled")
+    
+    if container_mode:
+        print("\n🐳 Container mode - AI summarization disabled (handled server-side)")
     
     print("\nNext steps:")
     print("1. Ensure the observability server is running at the configured URL")

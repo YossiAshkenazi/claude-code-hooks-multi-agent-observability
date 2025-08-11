@@ -16,7 +16,8 @@
       "Bash(bun:*)",
       "Bash(./src/index.ts)",
       "Bash(.scriptsstop-services.ps1)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(dir:*)"
     ],
     "deny": []
   }
