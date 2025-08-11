@@ -109,7 +109,7 @@ def create_config_from_template(target_dir, project_name, server_url, features):
     
     return config_path
 
-def create_settings_from_config(target_dir, config):
+def create_settings_from_config(target_dir, config, subagent_safe=False):
     """Create settings.json based on configuration."""
     settings = {"hooks": {}}
     
@@ -118,17 +118,25 @@ def create_settings_from_config(target_dir, config):
             continue
             
         options = hook_config.get("options", [])
+        # Use safe wrapper for subagent environments
+        script_name = "safe_send_event.py" if subagent_safe else "send_event.py"
         command_parts = [
-            "uv run .claude/send_event.py",
+            f"uv run .claude/{script_name}",
             f"--event-type {hook_type}"
         ] + [f"--{opt}" for opt in options]
         
+        hook_config_dict = {
+            "type": "command",
+            "command": " ".join(command_parts)
+        }
+        
+        # Add continueOnError for subagent-safe mode
+        if subagent_safe:
+            hook_config_dict["continueOnError"] = True
+        
         settings["hooks"][hook_type] = [{
             "matcher": "" if hook_type != "UserPromptSubmit" else None,
-            "hooks": [{
-                "type": "command",
-                "command": " ".join(command_parts)
-            }]
+            "hooks": [hook_config_dict]
         }]
         
         # Remove None matcher for UserPromptSubmit
@@ -153,8 +161,9 @@ def main():
         print("  --no-announce          Disable completion announcements")
         print("  --minimal              Install minimal hooks only (PreToolUse, PostToolUse, UserPromptSubmit)")
         print("  --container            Configure for Docker container (disables summarization)")
+        print("  --subagent-safe        Use resilient hooks that work with subagents")
         print("\nExample: python install.py ~/my-project --project-name my-app")
-        print("\nFor Docker containers: python install.py /app --container")
+        print("\nFor Docker containers: python install.py /app --container --subagent-safe")
         sys.exit(1)
     
     # Parse arguments
@@ -169,6 +178,7 @@ def main():
     }
     minimal = False
     container_mode = False
+    subagent_safe = False
     
     i = 2
     while i < len(sys.argv):
@@ -200,6 +210,9 @@ def main():
             # Containers should not do AI summarization (server-side only)
             features["summarize"] = False
             i += 1
+        elif arg == "--subagent-safe":
+            subagent_safe = True
+            i += 1
         else:
             print(f"Unknown argument: {arg}")
             sys.exit(1)
@@ -227,8 +240,11 @@ def main():
     # Core hook scripts
     hook_files = [
         'send_event.py',
+        'safe_send_event.py',  # Add the safe wrapper
         'pre_tool_use.py', 
         'post_tool_use.py',
+        'pre_tool_use_safe.py',  # Subagent-safe versions
+        'post_tool_use_safe.py',
         'user_prompt_submit.py',
         'notification.py',
         'stop.py',
@@ -239,18 +255,39 @@ def main():
         src_file = source_dir / hook_file
         if src_file.exists():
             shutil.copy2(src_file, claude_dir / hook_file)
-            print(f"  ✅ {hook_file}")
+            print(f"  [OK] {hook_file}")
         else:
-            print(f"  ⚠️  Warning: {hook_file} not found in source")
+            print(f"  [WARN]  Warning: {hook_file} not found in source")
     
-    # Copy utils directory
+    # Copy utils directory with better error handling
     utils_src = source_dir / 'utils'
     utils_dst = claude_dir / 'utils'
     if utils_src.exists():
+        # Try to remove existing directory
         if utils_dst.exists():
-            shutil.rmtree(utils_dst)
-        shutil.copytree(utils_src, utils_dst)
-        print(f"  ✅ utils/ directory")
+            try:
+                shutil.rmtree(utils_dst)
+            except (PermissionError, OSError) as e:
+                # On Windows, files might be in use or locked
+                print(f"  [WARN]  Could not remove existing utils/ directory, attempting merge...")
+                # Try copying individual files instead
+                try:
+                    import distutils.dir_util
+                    distutils.dir_util.copy_tree(str(utils_src), str(utils_dst))
+                    print(f"  [OK] utils/ directory (merged)")
+                except Exception as merge_error:
+                    print(f"  [ERROR] Error: Could not update utils/ directory: {merge_error}")
+                utils_dst = None  # Mark as handled
+        
+        # Only copy if we successfully removed the old directory
+        if utils_dst is not None and not utils_dst.exists():
+            try:
+                shutil.copytree(utils_src, utils_dst)
+                print(f"  [OK] utils/ directory")
+            except Exception as e:
+                print(f"  [ERROR] Error: Could not copy utils/ directory: {e}")
+    else:
+        print(f"  [WARN]  Warning: utils/ directory not found in source")
     
     # Create configuration file
     config_path = create_config_from_template(claude_dir, project_name, server_url, features)
@@ -260,27 +297,41 @@ def main():
     with open(config_path, 'r') as f:
         config = json.load(f)
     
-    # Create settings.json from config
+    # Copy appropriate settings.json template
     settings_path = claude_dir / 'settings.json'
+    if subagent_safe:
+        settings_template = source_dir / 'settings.subagent.json'
+    else:
+        # Use the regular template and apply configuration
+        settings_template = None  # Will be created from config
+    
     if settings_path.exists():
         print(f"Warning: {settings_path} already exists.")
         response = input("Do you want to overwrite it? (y/n): ")
         if response.lower() != 'y':
             print("Keeping existing settings.json")
         else:
-            create_settings_from_config(claude_dir, config)
-            print(f"Updated settings.json for project: {project_name}")
+            if settings_template:
+                shutil.copy2(settings_template, settings_path)
+                print(f"Updated settings.json for project: {project_name} (subagent-safe)")
+            else:
+                create_settings_from_config(claude_dir, config)
+                print(f"Updated settings.json for project: {project_name}")
     else:
-        create_settings_from_config(claude_dir, config)
-        print(f"Created settings.json for project: {project_name}")
+        if settings_template:
+            shutil.copy2(settings_template, settings_path)
+            print(f"Created settings.json for project: {project_name} (subagent-safe)")
+        else:
+            create_settings_from_config(claude_dir, config)
+            print(f"Created settings.json for project: {project_name}")
     
-    print("\n✅ Installation complete!")
+    print("\n[OK] Installation complete!")
     print("\nFiles installed:")
-    print(f"  🔗 {claude_dir}/settings.json")
-    print(f"  ⚙️  {claude_dir}/hooks-config.json")
-    print(f"  📡 {claude_dir}/send_event.py")
-    print(f"  🛡️  {claude_dir}/pre_tool_use.py (security validation)")
-    print(f"  📄 {claude_dir}/post_tool_use.py")
+    print(f"  -> {claude_dir}/settings.json")
+    print(f"  ->  {claude_dir}/hooks-config.json")
+    print(f"  -> {claude_dir}/send_event.py")
+    print(f"  ->  {claude_dir}/pre_tool_use.py (security validation)")
+    print(f"  -> {claude_dir}/post_tool_use.py")
     print(f"  💬 {claude_dir}/user_prompt_submit.py")
     print(f"  🔔 {claude_dir}/notification.py (TTS support)")
     print(f"  🏁 {claude_dir}/stop.py")
@@ -291,14 +342,17 @@ def main():
     print(f"Server URL: {server_url}")
     print(f"Features enabled:")
     for feature, enabled in features.items():
-        status = "✅" if enabled else "❌"
+        status = "[OK]" if enabled else "❌"
         print(f"  {status} {feature.replace('_', ' ').title()}")
     
     if minimal:
-        print("\n📦 Minimal installation - only core hooks enabled")
+        print("\n[MINIMAL] Minimal installation - only core hooks enabled")
     
     if container_mode:
-        print("\n🐳 Container mode - AI summarization disabled (handled server-side)")
+        print("\n[DOCKER] Container mode - AI summarization disabled (handled server-side)")
+    
+    if subagent_safe:
+        print("\n[SAFE] Subagent-safe mode - hooks will fail gracefully if dependencies are missing")
     
     print("\nNext steps:")
     print("1. Ensure the observability server is running at the configured URL")

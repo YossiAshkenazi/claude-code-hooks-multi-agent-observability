@@ -1,0 +1,74 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/pre_tool_use_safe.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "uv run .claude/safe_send_event.py --event-type PreToolUse",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/post_tool_use_safe.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "uv run .claude/safe_send_event.py --event-type PostToolUse",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/safe_send_event.py --event-type UserPromptSubmit",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/safe_send_event.py --event-type Stop",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/safe_send_event.py --event-type SubagentStop",
+            "continueOnError": true
+          }
+        ]
+      }
+    ]
+  }
+}
