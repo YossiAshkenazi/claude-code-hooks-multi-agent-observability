@@ -17,7 +17,13 @@
       "Bash(./src/index.ts)",
       "Bash(.scriptsstop-services.ps1)",
       "Bash(cp:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(python:*)",
+      "Bash(git add:*)",
+      "Bash(sed:*)",
+      "Bash(for f in *.py)",
+      "Bash(do sed -i '1s|.*|#!/usr/bin/env python3|' \"$f\")",
+      "Bash(done)"
     ],
     "deny": []
   }
