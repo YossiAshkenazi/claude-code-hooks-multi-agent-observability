@@ -8,7 +8,22 @@
       "Bash(python test_tts.py:*)",
       "Bash(pip install:*)",
       "Bash(ls:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(bun add:*)",
+      "Bash(bun run:*)",
+      "Bash(where uv)",
+      "Bash(bun start:*)",
+      "Bash(bun:*)",
+      "Bash(./src/index.ts)",
+      "Bash(.scriptsstop-services.ps1)",
+      "Bash(cp:*)",
+      "Bash(dir:*)",
+      "Bash(python:*)",
+      "Bash(git add:*)",
+      "Bash(sed:*)",
+      "Bash(for f in *.py)",
+      "Bash(do sed -i '1s|.*|#!/usr/bin/env python3|' \"$f\")",
+      "Bash(done)"
     ],
     "deny": []
   }

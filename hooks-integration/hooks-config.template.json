@@ -1,0 +1,40 @@
+{
+  "source_app": "PROJECT_NAME",
+  "server_url": "http://host.docker.internal:4000/events",
+  "features": {
+    "summarize": true,
+    "tts_notifications": true,
+    "chat_transcript": true,
+    "completion_announcements": true
+  },
+  "hooks": {
+    "PreToolUse": {
+      "enabled": true,
+      "options": ["summarize"]
+    },
+    "PostToolUse": {
+      "enabled": true,
+      "options": ["summarize"]
+    },
+    "UserPromptSubmit": {
+      "enabled": true,
+      "options": ["summarize"]
+    },
+    "Notification": {
+      "enabled": true,
+      "options": ["notify"]
+    },
+    "Stop": {
+      "enabled": true,
+      "options": ["add-chat", "announce"]
+    },
+    "SubagentStop": {
+      "enabled": true,
+      "options": []
+    },
+    "PreCompact": {
+      "enabled": false,
+      "options": []
+    }
+  }
+}

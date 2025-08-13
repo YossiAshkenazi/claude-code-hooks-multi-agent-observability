@@ -41,7 +41,7 @@ const server = Bun.serve({
     // POST /events - Receive new events
     if (url.pathname === '/events' && req.method === 'POST') {
       try {
-        const event: HookEvent = await req.json();
+        const event = await req.json() as HookEvent;
         
         // Validate required fields
         if (!event.source_app || !event.session_id || !event.hook_event_type || !event.payload) {
@@ -51,10 +51,16 @@ const server = Bun.serve({
           });
         }
         
-        // Check if client wants server-side summarization  
+        // Check if client wants server-side summarization
         const shouldSummarize = url.searchParams.get('summarize') === 'true';
         if (shouldSummarize && !event.summary) {
-          // Note: AI summarization would go here if needed
+          const summary = await generateEventSummary({
+            event_type: event.hook_event_type,
+            payload: event.payload
+          });
+          if (summary) {
+            event.summary = summary;
+          }
         }
         
         // Insert event into database
@@ -244,7 +250,7 @@ const server = Bun.serve({
     if (url.pathname.match(/^\/api\/themes\/[^\/]+\/export$/) && req.method === 'GET') {
       const id = url.pathname.split('/')[3];
       
-      const result = await exportThemeById(id);
+      const result = await exportThemeById(id || '');
       if (!result.success) {
         const status = result.error?.includes('not found') ? 404 : 400;
         return new Response(JSON.stringify(result), {
@@ -257,7 +263,7 @@ const server = Bun.serve({
         headers: { 
           ...headers, 
           'Content-Type': 'application/json',
-          'Content-Disposition': `attachment; filename="${result.data.theme.name}.json"`
+          'Content-Disposition': `attachment; filename="${result.data?.theme.name || 'theme'}.json"`
         }
       });
     }
@@ -295,12 +301,78 @@ const server = Bun.serve({
       });
     }
     
+    // AI API endpoints
+    
+    // POST /api/ai/summarize - Generate event summary
+    if (url.pathname === '/api/ai/summarize' && req.method === 'POST') {
+      try {
+        const request = await req.json() as { event_type: string; payload: any };
+        
+        if (!request.event_type || !request.payload) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: 'event_type and payload are required' 
+          }), {
+            status: 400,
+            headers: { ...headers, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        const summary = await generateEventSummary(request);
+        
+        return new Response(JSON.stringify({ 
+          success: true, 
+          summary: summary || 'Could not generate summary'
+        }), {
+          headers: { ...headers, 'Content-Type': 'application/json' }
+        });
+        
+      } catch (error) {
+        console.error('Error generating summary:', error);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Failed to generate summary' 
+        }), {
+          status: 500,
+          headers: { ...headers, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+    
+    // POST /api/ai/completion - Generate completion message
+    if (url.pathname === '/api/ai/completion' && req.method === 'POST') {
+      try {
+        const request = await req.json().catch(() => ({})) as { engineer_name?: string };
+        
+        const message = await generateCompletionMessage({
+          engineer_name: request.engineer_name || process.env.ENGINEER_NAME
+        });
+        
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: message || 'Task complete!'
+        }), {
+          headers: { ...headers, 'Content-Type': 'application/json' }
+        });
+        
+      } catch (error) {
+        console.error('Error generating completion:', error);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Failed to generate completion message' 
+        }), {
+          status: 500,
+          headers: { ...headers, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+    
     // TTS API endpoints
     
     // POST /api/tts - Execute TTS with custom text
     if (url.pathname === '/api/tts' && req.method === 'POST') {
       try {
-        const ttsRequest = await req.json();
+        const ttsRequest = await req.json() as { text?: string; notification?: boolean; engineer_name?: string };
         
         // Validate request
         if (typeof ttsRequest.text !== 'string' && !ttsRequest.notification) {
@@ -321,7 +393,7 @@ const server = Bun.serve({
         } else {
           // Use custom text
           result = await executeTTS({
-            text: ttsRequest.text,
+            text: ttsRequest.text || '',
             engineer_name: ttsRequest.engineer_name || process.env.ENGINEER_NAME
           });
         }
@@ -347,7 +419,7 @@ const server = Bun.serve({
     // POST /api/tts/notification - Quick notification TTS
     if (url.pathname === '/api/tts/notification' && req.method === 'POST') {
       try {
-        const requestData = await req.json().catch(() => ({}));
+        const requestData = await req.json().catch(() => ({})) as { engineer_name?: string };
         const engineerName = requestData.engineer_name || process.env.ENGINEER_NAME;
         
         const result = await speakNotification(engineerName);
@@ -368,6 +440,22 @@ const server = Bun.serve({
           headers: { ...headers, 'Content-Type': 'application/json' }
         });
       }
+    }
+    
+    // GET /api/debug/env - Check environment variables (development only)
+    if (url.pathname === '/api/debug/env' && req.method === 'GET') {
+      const envStatus = {
+        ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,
+        OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
+        ELEVENLABS_API_KEY: !!process.env.ELEVENLABS_API_KEY,
+        ENGINEER_NAME: process.env.ENGINEER_NAME || null,
+        UV_PATH: process.env.UV_PATH || null,
+        NODE_ENV: process.env.NODE_ENV || 'development'
+      };
+      
+      return new Response(JSON.stringify(envStatus, null, 2), {
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
     }
     
     // WebSocket upgrade
@@ -401,11 +489,6 @@ const server = Bun.serve({
     
     close(ws) {
       console.log('WebSocket client disconnected');
-      wsClients.delete(ws);
-    },
-    
-    error(ws, error) {
-      console.error('WebSocket error:', error);
       wsClients.delete(ws);
     }
   }

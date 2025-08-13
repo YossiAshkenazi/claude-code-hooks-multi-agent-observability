@@ -1,0 +1,93 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/pre_tool_use.py"
+          },
+          {
+            "type": "command",
+            "command": "uv run .claude/send_event.py --event-type PreToolUse"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/post_tool_use.py"
+          },
+          {
+            "type": "command",
+            "command": "uv run .claude/send_event.py --event-type PostToolUse"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/user_prompt_submit.py --log-only"
+          },
+          {
+            "type": "command",
+            "command": "uv run .claude/send_event.py --event-type UserPromptSubmit"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/notification.py --notify"
+          },
+          {
+            "type": "command",
+            "command": "uv run .claude/send_event.py --event-type Notification --notify"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/stop.py --chat"
+          },
+          {
+            "type": "command",
+            "command": "uv run .claude/send_event.py --event-type Stop --add-chat --announce"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/subagent_stop.py"
+          },
+          {
+            "type": "command",
+            "command": "uv run .claude/send_event.py --event-type SubagentStop"
+          }
+        ]
+      }
+    ]
+  }
+}

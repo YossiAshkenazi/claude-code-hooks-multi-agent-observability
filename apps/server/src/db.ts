@@ -211,7 +211,7 @@ export function updateTheme(id: string, updates: Partial<Theme>): boolean {
     });
   
   const stmt = db.prepare(`UPDATE themes SET ${setClause} WHERE id = ?`);
-  const result = stmt.run(...values, id);
+  const result = stmt.run(...values as any[], id);
   
   return result.changes > 0;
 }

@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 
 interface TTSRequest {
   text: string;
@@ -12,6 +13,51 @@ interface TTSResponse {
   message: string;
   method_used?: string;
   error?: string;
+}
+
+/**
+ * Find UV executable path
+ */
+function getUVPath(): string {
+  // Check environment variable first
+  if (process.env.UV_PATH) {
+    return process.env.UV_PATH;
+  }
+  
+  // For Windows, use the known working path
+  if (process.platform === 'win32') {
+    // Try the common installation path directly
+    const commonPath = 'C:\\Users\\יוסי\\.local\\bin\\uv.exe';
+    if (existsSync(commonPath)) {
+      return commonPath;
+    }
+    
+    // Fallback to PATH resolution
+    return 'uv';
+  }
+  
+  // Check common installation paths for non-Windows
+  const commonPaths = [
+    'uv', // Try PATH first
+    join(homedir(), '.local', 'bin', 'uv'),
+    '/usr/local/bin/uv',
+    '/opt/homebrew/bin/uv',
+  ];
+  
+  for (const path of commonPaths) {
+    try {
+      if (path === 'uv') {
+        return path;
+      }
+      if (existsSync(path)) {
+        return path;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+  
+  return 'uv'; // Fallback to hoping it's in PATH
 }
 
 /**
@@ -77,8 +123,8 @@ export async function executeTTS(request: TTSRequest): Promise<TTSResponse> {
   return new Promise((resolve) => {
     try {
       // Execute TTS script using uv with full path
-      const uvPath = process.env.UV_PATH || 'C:\\Users\\יוסי\\.local\\bin\\uv.exe';
-      // Set up clean environment for UV to avoid encoding issues
+      const uvPath = getUVPath();
+      // Set up clean environment for UV
       const env = { ...process.env };
       if (process.platform === 'win32') {
         // Set a clean temp directory to avoid encoding issues
@@ -104,15 +150,15 @@ export async function executeTTS(request: TTSRequest): Promise<TTSResponse> {
       let stdout = '';
       let stderr = '';
       
-      childProcess.stdout?.on('data', (data) => {
+      childProcess.stdout?.on('data', (data: Buffer) => {
         stdout += data.toString();
       });
       
-      childProcess.stderr?.on('data', (data) => {
+      childProcess.stderr?.on('data', (data: Buffer) => {
         stderr += data.toString();
       });
       
-      childProcess.on('close', (code) => {
+      childProcess.on('close', (code: number | null) => {
         const methodUsed = ttsScript.includes('elevenlabs') ? 'ElevenLabs' :
                           ttsScript.includes('openai') ? 'OpenAI' :
                           ttsScript.includes('pyttsx3') ? 'pyttsx3' : 'Unknown';
@@ -133,7 +179,7 @@ export async function executeTTS(request: TTSRequest): Promise<TTSResponse> {
         }
       });
       
-      childProcess.on('error', (error) => {
+      childProcess.on('error', (error: Error) => {
         resolve({
           success: false,
           message: "Failed to execute TTS script",

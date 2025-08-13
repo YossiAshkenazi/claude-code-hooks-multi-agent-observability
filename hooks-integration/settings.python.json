@@ -1,0 +1,105 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/pre_tool_use.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/send_event.py --event-type PreToolUse",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/post_tool_use.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/send_event.py --event-type PostToolUse",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/user_prompt_submit.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/send_event.py --event-type UserPromptSubmit",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/notification.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/send_event.py --event-type Notification --notify",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/stop.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/send_event.py --event-type Stop --add-chat --announce",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/subagent_stop.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/send_event.py --event-type SubagentStop",
+            "continueOnError": true
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -36,5 +36,3 @@ if ($stopped) {
     Write-Host "No running services found to stop" -ForegroundColor Yellow
 }
 
-Write-Host "Press any key to continue..."
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
