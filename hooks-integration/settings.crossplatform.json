@@ -1,0 +1,105 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/run_hook.py pre_tool_use.py || python3 .claude/run_hook.py pre_tool_use.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python .claude/run_hook.py send_event.py --event-type PreToolUse --summarize || python3 .claude/run_hook.py send_event.py --event-type PreToolUse --summarize",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/run_hook.py post_tool_use.py || python3 .claude/run_hook.py post_tool_use.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python .claude/run_hook.py send_event.py --event-type PostToolUse --summarize || python3 .claude/run_hook.py send_event.py --event-type PostToolUse --summarize",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/run_hook.py user_prompt_submit.py || python3 .claude/run_hook.py user_prompt_submit.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python .claude/run_hook.py send_event.py --event-type UserPromptSubmit --summarize || python3 .claude/run_hook.py send_event.py --event-type UserPromptSubmit --summarize",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/run_hook.py notification.py || python3 .claude/run_hook.py notification.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python .claude/run_hook.py send_event.py --event-type Notification --notify || python3 .claude/run_hook.py send_event.py --event-type Notification --notify",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/run_hook.py stop.py || python3 .claude/run_hook.py stop.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python .claude/run_hook.py send_event.py --event-type Stop --add-chat --announce || python3 .claude/run_hook.py send_event.py --event-type Stop --add-chat --announce",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/run_hook.py subagent_stop.py || python3 .claude/run_hook.py subagent_stop.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python .claude/run_hook.py send_event.py --event-type SubagentStop || python3 .claude/run_hook.py send_event.py --event-type SubagentStop",
+            "continueOnError": true
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python pre_tool_use.py 2>/dev/null || python3 pre_tool_use.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python send_event.py --event-type PreToolUse 2>/dev/null || python3 send_event.py --event-type PreToolUse",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python post_tool_use.py 2>/dev/null || python3 post_tool_use.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python send_event.py --event-type PostToolUse 2>/dev/null || python3 send_event.py --event-type PostToolUse",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python user_prompt_submit.py 2>/dev/null || python3 user_prompt_submit.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python send_event.py --event-type UserPromptSubmit 2>/dev/null || python3 send_event.py --event-type UserPromptSubmit",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python notification.py 2>/dev/null || python3 notification.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python send_event.py --event-type Notification --notify 2>/dev/null || python3 send_event.py --event-type Notification --notify",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python stop.py 2>/dev/null || python3 stop.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python send_event.py --event-type Stop --add-chat --announce 2>/dev/null || python3 send_event.py --event-type Stop --add-chat --announce",
+            "continueOnError": true
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python subagent_stop.py 2>/dev/null || python3 subagent_stop.py",
+            "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "python send_event.py --event-type SubagentStop 2>/dev/null || python3 send_event.py --event-type SubagentStop",
+            "continueOnError": true
+          }
+        ]
+      }
+    ]
+  }
+}
