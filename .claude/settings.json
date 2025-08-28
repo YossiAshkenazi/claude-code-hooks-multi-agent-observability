@@ -1,103 +1,83 @@
 {
+  "statusLine": {
+    "type": "command",
+    "command": "wsl.exe bash -c \u0027input=$(cat); current_dir=$(echo \"$input\" | jq -r \".workspace.current_dir // .cwd // \\\"\\\"\"); model_name=$(echo \"$input\" | jq -r \".model.display_name // \\\"\\\"\"); output_style=$(echo \"$input\" | jq -r \".output_style.name // \\\"default\\\"\"); dir_name=$(basename \"$current_dir\" 2\u003e/dev/null || echo \"~\"); current_time=$(date \"+%H:%M:%S\"); git_info=\"\"; if git rev-parse --git-dir \u003e/dev/null 2\u003e\u00261; then branch=$(git branch --show-current 2\u003e/dev/null || git rev-parse --short HEAD 2\u003e/dev/null || \"detached\"); git_status=\"\"; if ! git diff-index --quiet HEAD -- 2\u003e/dev/null; then git_status=\"*\"; fi; if [ -n \"$(git ls-files --others --exclude-standard 2\u003e/dev/null)\" ]; then git_status=\"${git_status}+\"; fi; git_info=\" \\\\033[36m⎇\\\\033[0m \\\\033[93m${branch}${git_status}\\\\033[0m\"; fi; hostname=$(hostname -s); user=$(whoami); case \"$model_name\" in *\"Sonnet\"*) model_color=\"\\\\033[38;5;99m\"; model_icon=\"◆\";; *\"Haiku\"*) model_color=\"\\\\033[38;5;82m\"; model_icon=\"◇\";; *\"Opus\"*) model_color=\"\\\\033[38;5;208m\"; model_icon=\"◈\";; *) model_color=\"\\\\033[38;5;147m\"; model_icon=\"◌\";; esac; case \"$output_style\" in \"Explanatory\") style_icon=\"📖\";; \"Learning\") style_icon=\"🎓\";; \"Concise\") style_icon=\"⚡\";; *) style_icon=\"💬\";; esac; printf \"\\\\033[38;5;39m🐧WSL\\\\033[0m %s %s%s%s\\\\033[0m │ \\\\033[32m%s\\\\033[0m@\\\\033[33m%s\\\\033[0m │ \\\\033[94m📁 %s\\\\033[0m%s │ \\\\033[90m⏰ %s\\\\033[0m │ %s Ready\\n\" \"$style_icon\" \"$model_color\" \"$model_icon\" \"$model_name\" \"$user\" \"$hostname\" \"$dir_name\" \"$git_info\" \"$current_time\" \"$style_icon\"\u0027"
+  },
   "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run .claude/hooks/pre_tool_use.py"
-          },
-          {
-            "type": "command",
-            "command": "uv run .claude/hooks/send_event.py --source-app cc-hook-multi-agent-obvs --event-type PreToolUse --summarize"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run .claude/hooks/post_tool_use.py"
-          },
-          {
-            "type": "command",
-            "command": "uv run .claude/hooks/send_event.py --source-app cc-hook-multi-agent-obvs --event-type PostToolUse --summarize"
-          }
-        ]
-      }
-    ],
     "Notification": [
       {
-        "matcher": "",
         "hooks": [
           {
-            "type": "command",
-            "command": "uv run .claude/hooks/notification.py --notify "
-          },
-          {
-            "type": "command",
-            "command": "uv run .claude/hooks/send_event.py --source-app cc-hook-multi-agent-obvs --event-type Notification --summarize"
+            "command": "node .claude/hooks/notification-hook.js",
+            "type": "command"
           }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run .claude/hooks/stop.py --chat"
-          },
-          {
-            "type": "command",
-            "command": "uv run .claude/hooks/send_event.py --source-app cc-hook-multi-agent-obvs --event-type Stop --add-chat"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run .claude/hooks/subagent_stop.py"
-          },
-          {
-            "type": "command",
-            "command": "uv run .claude/hooks/send_event.py --source-app cc-hook-multi-agent-obvs --event-type SubagentStop"
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run .claude/hooks/send_event.py --source-app cc-hook-multi-agent-obvs --event-type PreCompact"
-          }
-        ]
+        ],
+        "matcher": ""
       }
     ],
     "UserPromptSubmit": [
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "uv run .claude/hooks/user_prompt_submit.py --log-only"
-          },
-          {
-            "type": "command",
-            "command": "uv run .claude/hooks/send_event.py --source-app cc-hook-multi-agent-obvs --event-type UserPromptSubmit --summarize"
+            "command": "node .claude/hooks/user-prompt-submit-hook.js",
+            "type": "command"
           }
         ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "node .claude/hooks/stop-hook.js",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "command": "node .claude/hooks/subagent-stop-hook.js",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "command": "node .claude/hooks/pre-compact-hook.js",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "node .claude/hooks/post-tool-use-hook.js",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "node .claude/hooks/pre-tool-use-hook.js",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
       }
     ]
   }
